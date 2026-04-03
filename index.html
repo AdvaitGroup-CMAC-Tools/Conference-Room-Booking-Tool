@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Conference Room Booking — Advait Group</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --blue:#1A4084;--blue2:#3A66AA;--blue3:#83B1DC;--blue4:#EBF2FF;
+  --red:#b52a1c;--red2:#FDECEA;
+  --green:#1a7a3a;--green2:#EAF6EE;
+  --bg:#f4f6fb;--card:#fff;--border:#dde4f0;
+  --text:#1C1C1C;--text2:#5a6474;--text3:#8a96a8;
+  --radius:10px;--radius2:6px;
+}
+body{font-family:'Inter',Calibri,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+.app{max-width:760px;margin:0 auto;padding:24px 16px 48px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:#1A4084;color:#fff;padding:12px 24px;border-radius:30px;font-size:13px;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,.18);opacity:0;transition:all .35s cubic-bezier(.34,1.56,.64,1);z-index:9999;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.green{background:#1a7a3a;}
+.toast.red{background:#b52a1c;}
+
+/* TICKER */
+.ticker-wrap{background:var(--blue);border-radius:var(--radius);overflow:hidden;margin-bottom:20px;height:36px;display:flex;align-items:center;transition:background .4s;}
+.ticker-wrap.all-busy{background:var(--red);}
+.ticker-wrap.one-busy{background:#c97a00;}
+.ticker-inner{overflow:hidden;flex:1;height:100%;}
+.ticker-text{display:inline-block;white-space:nowrap;font-size:12px;font-weight:500;color:#fff;line-height:36px;padding-right:80px;animation:tick 26s linear infinite;}
+.ticker-text.fast{animation-duration:15s;}
+@keyframes tick{0%{transform:translateX(100vw)}100%{transform:translateX(-100%)}}
+.tdot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:8px;vertical-align:middle;}
+.tdot-free{background:#5be38a;}
+.tdot-busy{background:#ffccc9;animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* HEADER */
+.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.hdr-left{display:flex;align-items:center;gap:10px;}
+.hdr-icon{font-size:22px;}
+.hdr-title{font-size:20px;font-weight:600;color:var(--text);}
+.about-btn{font-size:12px;color:var(--blue);background:var(--blue4);border:none;border-radius:20px;padding:5px 14px;cursor:pointer;font-weight:500;transition:background .18s,color .18s;}
+.about-btn:hover{background:var(--blue);color:#fff;}
+.page-sub{font-size:12px;color:var(--text2);margin-bottom:20px;}
+
+/* ABOUT PANEL */
+.about-panel{display:none;background:var(--card);border:1px solid var(--blue3);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px;}
+.about-panel.show{display:block;}
+.about-top{font-size:13px;font-weight:600;color:var(--blue);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #d0e4f5;display:flex;justify-content:space-between;}
+.close-btn{font-size:11px;color:var(--text3);cursor:pointer;font-weight:400;}
+.about-body{font-size:13px;color:var(--text);line-height:1.75;}
+.about-body p{margin-bottom:8px;}
+.about-body ul{padding-left:18px;margin-bottom:8px;}
+.about-body li{margin-bottom:3px;color:var(--text2);}
+.contact-card{display:flex;align-items:center;gap:12px;margin-top:12px;padding:10px 14px;background:var(--blue4);border-radius:var(--radius2);border:1px solid var(--blue3);}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;}
+.cname{font-size:13px;font-weight:500;color:var(--blue);}
+.cdept{font-size:11px;color:var(--blue2);margin-top:1px;}
+
+/* ROOM GRID */
+.room-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+@media(max-width:560px){.room-grid{grid-template-columns:1fr;}}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:0;}
+.card.room-card{position:relative;}
+
+/* ROOM HEADER */
+.room-hdr{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;}
+.room-icon{width:44px;height:44px;border-radius:var(--radius2);background:var(--blue4);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.room-name{font-size:15px;font-weight:600;color:var(--text);line-height:1.3;}
+.room-floor{font-size:11px;color:var(--blue2);margin-top:2px;font-weight:500;display:flex;align-items:center;gap:4px;}
+.sbadge{margin-left:auto;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:500;transition:all .3s;white-space:nowrap;}
+.badge-free{background:var(--green2);color:var(--green);}
+.badge-busy{background:var(--red2);color:var(--red);}
+
+/* STATUS ROW */
+.info-row{font-size:12px;color:var(--text2);background:var(--bg);border-radius:var(--radius2);padding:9px 12px;min-height:36px;display:flex;align-items:center;gap:8px;margin-bottom:12px;line-height:1.4;}
+.idot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.dot-free{background:#27ae60;}
+.dot-busy{background:#e74c3c;animation:pulse 1.2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* FIELDS */
+.field-row{display:flex;gap:8px;margin-bottom:12px;}
+select,input[type=text]{height:36px;font-size:13px;padding:0 11px;border-radius:var(--radius2);border:1px solid var(--border);background:#fff;color:var(--text);font-family:inherit;outline:none;width:100%;}
+select:focus,input:focus{border-color:var(--blue2);}
+.field-row select{flex:1.2;}
+.field-row input{flex:1.5;min-width:0;}
+::placeholder{color:var(--text3);}
+
+/* BUTTONS */
+.btn{height:36px;padding:0 16px;border-radius:var(--radius2);font-size:13px;font-weight:500;cursor:pointer;border:none;white-space:nowrap;font-family:inherit;transition:opacity .15s;width:100%;}
+.btn:active{opacity:.85;}
+.btn-claim{background:var(--blue);color:#fff;}
+.btn-release{background:var(--red);color:#fff;}
+.btn-disabled{background:#eef1f7;color:var(--text3);cursor:not-allowed;}
+
+/* DURATION CONFIRM */
+.iconfirm{margin-top:12px;padding:14px 16px;background:var(--blue4);border-radius:var(--radius2);border:1px solid var(--blue3);display:none;}
+.iconfirm.show{display:block;}
+.iconfirm-label{font-size:12px;font-weight:600;color:var(--blue);margin-bottom:10px;}
+.dur-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;}
+.dur-row select{flex:1;min-width:130px;height:34px;}
+.dur-divider{font-size:11px;color:var(--text3);white-space:nowrap;}
+.custom-dur-wrap{display:flex;align-items:center;gap:6px;flex:1;min-width:100px;}
+.custom-dur-wrap input{flex:1;min-width:0;height:34px;}
+.custom-dur-wrap span{font-size:12px;color:var(--text2);white-space:nowrap;}
+.iconfirm-btns{display:flex;gap:10px;}
+.btn-ok{height:34px;padding:0 16px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius2);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;}
+.btn-cx{height:34px;padding:0 14px;background:transparent;color:var(--blue);border:1px solid var(--blue3);border-radius:var(--radius2);font-size:13px;cursor:pointer;font-family:inherit;}
+
+/* CLAIM TIMER BAR */
+.claim-timer-wrap{margin-top:12px;display:none;}
+.claim-timer-wrap.show{display:block;}
+.claim-timer-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.claim-timer-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;}
+.claim-timer-remaining{font-size:13px;font-weight:600;color:var(--blue);font-variant-numeric:tabular-nums;}
+.claim-timer-track{height:5px;background:#e2e8f4;border-radius:3px;overflow:hidden;}
+.claim-timer-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--blue),var(--blue2));transition:width 1s linear;width:100%;}
+.claim-timer-fill.warning{background:linear-gradient(90deg,#e67e22,#f39c12);}
+.claim-timer-fill.critical{background:linear-gradient(90deg,var(--red),#e74c3c);}
+
+/* DIVIDER */
+.log-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:0;}
+.log-hdr{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;}
+.log-list{display:flex;flex-direction:column;gap:4px;max-height:140px;overflow-y:auto;}
+.log-item{font-size:12px;padding:6px 10px;border-radius:var(--radius2);background:var(--bg);display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;}
+.ld{color:var(--text);font-weight:500;flex-shrink:0;}
+.lroom{font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:var(--blue4);color:var(--blue);flex-shrink:0;}
+.lm{color:var(--text2);font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.lt{color:var(--text3);font-size:11px;flex-shrink:0;}
+.lc{color:var(--green);font-size:11px;}
+.lr{color:var(--red);font-size:11px;}
+.no-log{font-size:12px;color:var(--text3);font-style:italic;}
+.rfhint{font-size:11px;color:var(--text3);text-align:right;margin-top:8px;display:flex;align-items:center;justify-content:flex-end;gap:5px;}
+.pring{width:7px;height:7px;border-radius:50%;background:#27ae60;animation:pr 2s ease-out infinite;}
+@keyframes pr{0%{opacity:1;transform:scale(1)}70%{opacity:0;transform:scale(2.2)}100%{opacity:0}}
+
+/* CAPACITY TAG */
+.cap-tag{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:500;color:var(--blue2);background:var(--blue4);border-radius:10px;padding:2px 9px;margin-top:4px;}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="toast" id="toast"></div>
+
+  <!-- TICKER -->
+  <div class="ticker-wrap" id="ticker-bar">
+    <div class="ticker-inner">
+      <div class="ticker-text" id="ticker-text">
+        <span class="tdot tdot-free"></span>Both conference rooms are currently free — book your slot before heading in
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <div class="hdr-left">
+      <span class="hdr-icon">🏢</span>
+      <div class="hdr-title">Conference Room Booking</div>
+    </div>
+    <button class="about-btn" onclick="toggleAbout()">ⓘ About</button>
+  </div>
+  <div class="page-sub">Room availability board · Advait Group (AETL &amp; AGPL)</div>
+
+  <!-- ABOUT -->
+  <div class="about-panel" id="about-panel">
+    <div class="about-top">About Conference Room Booking <span class="close-btn" onclick="toggleAbout()">✕ Close</span></div>
+    <div class="about-body">
+      <p>This tool manages real-time booking for Advait Group's two conference rooms. Mark a room as occupied when your meeting begins and release it when done — so colleagues can plan accordingly.</p>
+      <ul>
+        <li><strong>Gyaan</strong> — 2nd Floor · Seats up to 12 people</li>
+        <li><strong>Dharma</strong> — 1st Floor · Seats up to 14 people</li>
+      </ul>
+      <p>Select your department, enter a meeting subject, and choose how long you need the room. The booking auto-releases after the selected duration.</p>
+      <p>For any issues, connect with:</p>
+      <div class="contact-card">
+        <div class="avatar">HR</div>
+        <div><div class="cname">Sneha Christian</div><div class="cdept">Corporate — HR</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROOM GRID -->
+  <div class="room-grid">
+
+    <!-- ROOM 1: GYAAN -->
+    <div class="card room-card" id="room-gyaan">
+      <div class="room-hdr">
+        <div class="room-icon">🧠</div>
+        <div>
+          <div class="room-name">Gyaan Conference Room</div>
+          <div class="room-floor">📍 2nd Floor</div>
+          <div class="cap-tag">👥 Capacity: 12</div>
+        </div>
+        <div class="sbadge badge-free" id="badge-gyaan">Checking…</div>
+      </div>
+      <div class="info-row"><div class="idot dot-free" id="dot-gyaan"></div><span id="info-gyaan">Loading…</span></div>
+      <div class="field-row">
+        <select id="dept-gyaan" onchange="onDeptChange('gyaan')">
+          <option value="">Select department</option>
+          <option>AGPL-GH2-EPC</option><option>AGPL-Solar-EPC</option><option>AGPL-Electrolizer-MFG</option><option>AGPL-NRE-BESS-EPC</option>
+          <option>Corporate - F&amp;A</option><option>Corporate - CP&amp;P</option><option>Corporate - CMAC</option><option>Corporate - CS</option>
+          <option>Corporate - HR</option><option>Corporate - Support Staff</option>
+          <option>AGPL-NRE-BESS-MFG</option><option>AGPL-FUELCELL-MFG</option>
+          <option>PTS-Liveline-EPC</option><option>PTS-ACS-OPGW-MFG</option><option>PTS-DISCOM-EPC</option><option>PTS-Tools-MFG</option>
+          <option>PTS-BD</option><option>PTS-ERS-MFG</option><option>PTS-HTLS-EPC</option><option>NRE-Sustainability Consultancy</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <input type="text" id="meeting-gyaan" placeholder="Meeting subject / name" maxlength="60" oninput="onDeptChange('gyaan')"/>
+      </div>
+      <button class="btn btn-disabled" id="action-btn-gyaan" onclick="handleAction('gyaan')">—</button>
+      <div class="claim-timer-wrap" id="claim-timer-wrap-gyaan">
+        <div class="claim-timer-top">
+          <span class="claim-timer-label">⏱ Time remaining</span>
+          <span class="claim-timer-remaining" id="claim-timer-remaining-gyaan">—</span>
+        </div>
+        <div class="claim-timer-track">
+          <div class="claim-timer-fill" id="claim-timer-fill-gyaan"></div>
+        </div>
+      </div>
+      <div class="iconfirm" id="iconfirm-gyaan">
+        <div class="iconfirm-label">How long do you need Gyaan?</div>
+        <div class="dur-row">
+          <select id="duration-gyaan" onchange="onDurSelect('gyaan')">
+            <option value="15 min">15 minutes</option>
+            <option value="30 min" selected>30 minutes</option>
+            <option value="45 min">45 minutes</option>
+            <option value="1 hr">1 hour</option>
+            <option value="1.5 hrs">1.5 hours</option>
+            <option value="2 hrs">2 hours</option>
+            <option value="3 hrs">3 hours</option>
+            <option value="Until released">Until I release it</option>
+            <option value="custom">Custom…</option>
+          </select>
+          <span class="dur-divider">or</span>
+          <div class="custom-dur-wrap">
+            <input type="text" id="custom-dur-gyaan" placeholder="e.g. 20 min" maxlength="20" oninput="onCustomDur('gyaan')"/>
+          </div>
+        </div>
+        <div class="iconfirm-btns">
+          <button class="btn-ok" onclick="confirmClaim('gyaan')">Confirm</button>
+          <button class="btn-cx" onclick="cancelClaim('gyaan')">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROOM 2: DHARMA -->
+    <div class="card room-card" id="room-dharma">
+      <div class="room-hdr">
+        <div class="room-icon">⚖️</div>
+        <div>
+          <div class="room-name">Dharma Conference Room</div>
+          <div class="room-floor">📍 1st Floor</div>
+          <div class="cap-tag">👥 Capacity: 14</div>
+        </div>
+        <div class="sbadge badge-free" id="badge-dharma">Checking…</div>
+      </div>
+      <div class="info-row"><div class="idot dot-free" id="dot-dharma"></div><span id="info-dharma">Loading…</span></div>
+      <div class="field-row">
+        <select id="dept-dharma" onchange="onDeptChange('dharma')">
+          <option value="">Select department</option>
+          <option>AGPL-GH2-EPC</option><option>AGPL-Solar-EPC</option><option>AGPL-Electrolizer-MFG</option><option>AGPL-NRE-BESS-EPC</option>
+          <option>Corporate - F&amp;A</option><option>Corporate - CP&amp;P</option><option>Corporate - CMAC</option><option>Corporate - CS</option>
+          <option>Corporate - HR</option><option>Corporate - Support Staff</option>
+          <option>AGPL-NRE-BESS-MFG</option><option>AGPL-FUELCELL-MFG</option>
+          <option>PTS-Liveline-EPC</option><option>PTS-ACS-OPGW-MFG</option><option>PTS-DISCOM-EPC</option><option>PTS-Tools-MFG</option>
+          <option>PTS-BD</option><option>PTS-ERS-MFG</option><option>PTS-HTLS-EPC</option><option>NRE-Sustainability Consultancy</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <input type="text" id="meeting-dharma" placeholder="Meeting subject / name" maxlength="60" oninput="onDeptChange('dharma')"/>
+      </div>
+      <button class="btn btn-disabled" id="action-btn-dharma" onclick="handleAction('dharma')">—</button>
+      <div class="claim-timer-wrap" id="claim-timer-wrap-dharma">
+        <div class="claim-timer-top">
+          <span class="claim-timer-label">⏱ Time remaining</span>
+          <span class="claim-timer-remaining" id="claim-timer-remaining-dharma">—</span>
+        </div>
+        <div class="claim-timer-track">
+          <div class="claim-timer-fill" id="claim-timer-fill-dharma"></div>
+        </div>
+      </div>
+      <div class="iconfirm" id="iconfirm-dharma">
+        <div class="iconfirm-label">How long do you need Dharma?</div>
+        <div class="dur-row">
+          <select id="duration-dharma" onchange="onDurSelect('dharma')">
+            <option value="15 min">15 minutes</option>
+            <option value="30 min" selected>30 minutes</option>
+            <option value="45 min">45 minutes</option>
+            <option value="1 hr">1 hour</option>
+            <option value="1.5 hrs">1.5 hours</option>
+            <option value="2 hrs">2 hours</option>
+            <option value="3 hrs">3 hours</option>
+            <option value="Until released">Until I release it</option>
+            <option value="custom">Custom…</option>
+          </select>
+          <span class="dur-divider">or</span>
+          <div class="custom-dur-wrap">
+            <input type="text" id="custom-dur-dharma" placeholder="e.g. 20 min" maxlength="20" oninput="onCustomDur('dharma')"/>
+          </div>
+        </div>
+        <div class="iconfirm-btns">
+          <button class="btn-ok" onclick="confirmClaim('dharma')">Confirm</button>
+          <button class="btn-cx" onclick="cancelClaim('dharma')">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /room-grid -->
+
+  <!-- ACTIVITY LOG -->
+  <div class="log-card">
+    <div class="log-hdr">Activity Log — Both Rooms</div>
+    <div class="log-list" id="log-list"><div class="no-log">No activity yet.</div></div>
+    <div class="rfhint"><span class="pring"></span><span>Live · updates every 3 s</span></div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// ── STORAGE KEYS ──
+const RK_GYAAN  = 'confroom-gyaan-v1';
+const RK_DHARMA = 'confroom-dharma-v1';
+const LK        = 'confroom-log-v1';
+
+// Room config
+const ROOMS = {
+  gyaan:  { label:'Gyaan',  floor:'2nd Floor' },
+  dharma: { label:'Dharma', floor:'1st Floor' }
+};
+
+// State per room
+const state = { gyaan: null, dharma: null };
+
+// ── UTILS ──
+function now(){ return new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}); }
+function toggleAbout(){ document.getElementById('about-panel').classList.toggle('show'); }
+function showToast(msg,type,dur){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast '+(type||'');
+  setTimeout(()=>t.classList.add('show'),10);
+  setTimeout(()=>t.classList.remove('show'),dur||3000);
+}
+
+// ── DURATION ──
+function parseDurationMs(str){
+  if(!str||str==='Until released') return null;
+  str=str.trim().toLowerCase();
+  const mHr=str.match(/(\d+\.?\d*)\s*h/), mMin=str.match(/(\d+\.?\d*)\s*m/);
+  let ms=0;
+  if(mHr) ms+=parseFloat(mHr[1])*3600000;
+  if(mMin) ms+=parseFloat(mMin[1])*60000;
+  return ms>0?ms:null;
+}
+function fmtRemaining(ms){
+  if(ms<=0) return '0s';
+  const h=Math.floor(ms/3600000), m=Math.floor((ms%3600000)/60000), s=Math.floor((ms%60000)/1000);
+  if(h>0) return h+'h '+(m>0?m+'m':'');
+  if(m>0) return m+'m '+(s>0?s+'s':'');
+  return s+'s';
+}
+
+// ── TICKER ──
+function updateTicker(){
+  const bar=document.getElementById('ticker-bar');
+  const el =document.getElementById('ticker-text');
+  const gBusy = !!state.gyaan;
+  const dBusy = !!state.dharma;
+
+  if(!gBusy && !dBusy){
+    bar.className='ticker-wrap';
+    el.innerHTML='<span class="tdot tdot-free"></span>Both conference rooms are currently free — book your slot before heading in';
+    el.className='ticker-text';
+  } else if(gBusy && dBusy){
+    bar.className='ticker-wrap all-busy';
+    const gm=state.gyaan.meeting?' — '+state.gyaan.meeting:'';
+    const dm=state.dharma.meeting?' — '+state.dharma.meeting:'';
+    const msg='⚠ ALL ROOMS OCCUPIED &nbsp;·&nbsp; Gyaan'+gm+' · '+state.gyaan.dept+' &nbsp;|&nbsp; Dharma'+dm+' · '+state.dharma.dept+' &nbsp;·&nbsp; Please wait &nbsp;·&nbsp; ⚠ ALL ROOMS OCCUPIED';
+    el.innerHTML='<span class="tdot tdot-busy"></span>'+msg;
+    el.className='ticker-text fast';
+  } else {
+    bar.className='ticker-wrap one-busy';
+    const busy  = gBusy ? 'Gyaan' : 'Dharma';
+    const s     = gBusy ? state.gyaan : state.dharma;
+    const free  = gBusy ? 'Dharma (1st Floor)' : 'Gyaan (2nd Floor)';
+    const mtg   = s.meeting?' — '+s.meeting:'';
+    el.innerHTML='<span class="tdot tdot-busy"></span>'+busy+mtg+' occupied by '+s.dept+' &nbsp;·&nbsp; <span class="tdot tdot-free"></span>'+free+' is available';
+    el.className='ticker-text';
+  }
+}
+
+// ── RENDER STATUS (per room) ──
+function renderStatus(room){
+  const s=state[room], cfg=ROOMS[room];
+  const badge=document.getElementById('badge-'+room);
+  const dot  =document.getElementById('dot-'+room);
+  const info =document.getElementById('info-'+room);
+  const btn  =document.getElementById('action-btn-'+room);
+  const dept =document.getElementById('dept-'+room).value;
+
+  if(!s){
+    badge.className='sbadge badge-free'; badge.textContent='Available';
+    dot.className='idot dot-free';
+    info.textContent=cfg.label+' is free — no booking right now.';
+    if(dept){ btn.className='btn btn-claim'; btn.textContent='Book '+cfg.label; }
+    else     { btn.className='btn btn-disabled'; btn.textContent='Select dept first'; }
+  } else {
+    badge.className='sbadge badge-busy'; badge.textContent='Occupied';
+    dot.className='idot dot-busy';
+    const dur=s.duration?' · '+s.duration:'';
+    const mtg=s.meeting?' · '+s.meeting:'';
+    const rem=s.claimExpiry?' · '+fmtRemaining(s.claimExpiry-Date.now())+' left':'';
+    info.textContent='Booked by '+s.dept+mtg+' · Since '+s.since+dur+rem;
+    if(dept===s.dept){ btn.className='btn btn-release'; btn.textContent='Release — Done'; }
+    else if(dept)    { btn.className='btn btn-disabled'; btn.textContent='Occupied'; }
+    else             { btn.className='btn btn-disabled'; btn.textContent='Select dept first'; }
+  }
+}
+
+// ── CLAIM TIMER ──
+function updateClaimTimer(room, remMs, totalMs){
+  const wrap =document.getElementById('claim-timer-wrap-'+room);
+  const fill =document.getElementById('claim-timer-fill-'+room);
+  const label=document.getElementById('claim-timer-remaining-'+room);
+  if(!wrap) return;
+  if(remMs===null){ wrap.classList.remove('show'); return; }
+  wrap.classList.add('show');
+  if(remMs===-1){ label.textContent='Until released'; fill.style.width='100%'; fill.className='claim-timer-fill'; return; }
+  label.textContent=fmtRemaining(remMs);
+  const pct=totalMs>0?Math.max(0,Math.min(100,(remMs/totalMs)*100)):100;
+  fill.style.width=pct+'%';
+  if(pct<=10)      fill.className='claim-timer-fill critical';
+  else if(pct<=25) fill.className='claim-timer-fill warning';
+  else             fill.className='claim-timer-fill';
+}
+
+// ── DEPT CHANGE ──
+function onDeptChange(room){
+  document.getElementById('iconfirm-'+room).classList.remove('show');
+  renderStatus(room);
+}
+
+// ── HANDLE ACTION ──
+function handleAction(room){
+  const dept=document.getElementById('dept-'+room).value;
+  if(!dept) return;
+  if(!state[room]){
+    document.getElementById('iconfirm-'+room).classList.add('show');
+    const btn=document.getElementById('action-btn-'+room);
+    btn.className='btn btn-disabled'; btn.textContent='Select duration ↓';
+  } else if(state[room].dept===dept){
+    releaseClaim(room);
+  }
+}
+
+// ── DURATION HELPERS ──
+function onDurSelect(room){
+  const sel=document.getElementById('duration-'+room);
+  const cust=document.getElementById('custom-dur-'+room);
+  if(sel.value==='custom') cust.focus(); else cust.value='';
+}
+function onCustomDur(room){
+  if(document.getElementById('custom-dur-'+room).value.trim())
+    document.getElementById('duration-'+room).value='custom';
+}
+function getSelectedDuration(room){
+  const cust=document.getElementById('custom-dur-'+room).value.trim();
+  if(cust) return cust;
+  const v=document.getElementById('duration-'+room).value;
+  return v==='custom'?'Custom':v;
+}
+function cancelClaim(room){
+  document.getElementById('iconfirm-'+room).classList.remove('show');
+  renderStatus(room);
+}
+
+// ── CONFIRM CLAIM ──
+async function confirmClaim(room){
+  const dept    =document.getElementById('dept-'+room).value;
+  const duration=getSelectedDuration(room);
+  const meeting =document.getElementById('meeting-'+room).value.trim();
+  const durMs   =parseDurationMs(duration);
+  const claimExpiry=durMs?Date.now()+durMs:null;
+  const s={dept,since:now(),duration,meeting,claimTime:Date.now(),claimExpiry};
+  state[room]=s; updateTicker(); renderStatus(room);
+  if(claimExpiry) updateClaimTimer(room,claimExpiry-Date.now(),durMs);
+  else            updateClaimTimer(room,-1,null);
+  document.getElementById('iconfirm-'+room).classList.remove('show');
+  const rk = room==='gyaan'?RK_GYAAN:RK_DHARMA;
+  try{ await window.storage.set(rk,JSON.stringify(s),true); await addLog(room,dept,'Booked',duration,meeting); }catch{}
+  loadLog();
+  showToast('✓ '+ROOMS[room].label+' booked!','green',2500);
+}
+
+// ── RELEASE ──
+async function releaseClaim(room){
+  const dept=document.getElementById('dept-'+room).value;
+  const prev=state[room]?state[room].meeting:null;
+  state[room]=null; updateTicker(); renderStatus(room); updateClaimTimer(room,null,null);
+  const rk=room==='gyaan'?RK_GYAAN:RK_DHARMA;
+  try{ await window.storage.delete(rk,true); await addLog(room,dept,'Released',null,prev); }catch{}
+  loadLog();
+  showToast('✓ '+ROOMS[room].label+' released','',2500);
+}
+
+// ── STORAGE ──
+async function loadState(){
+  for(const room of ['gyaan','dharma']){
+    const rk=room==='gyaan'?RK_GYAAN:RK_DHARMA;
+    let fresh=null;
+    let storageOk=false;
+    try{
+      const r=await window.storage.get(rk,true);
+      fresh=r?JSON.parse(r.value):null; storageOk=true;
+    }catch{ fresh=null; }
+    // auto-expire
+    if(fresh&&fresh.claimExpiry&&Date.now()>=fresh.claimExpiry){
+      try{ await window.storage.delete(rk,true); await addLog(room,fresh.dept,'Auto-released (expired)',null,fresh.meeting); }catch{}
+      fresh=null;
+    }
+    if(!storageOk){
+      if(state[room]&&state[room].claimExpiry&&Date.now()<state[room].claimExpiry) continue;
+      if(state[room]&&!state[room].claimExpiry) continue;
+    }
+    if(JSON.stringify(state[room])!==JSON.stringify(fresh)){
+      state[room]=fresh; renderStatus(room);
+    }
+  }
+  updateTicker(); loadLog();
+}
+
+// ── LOG ──
+async function loadLog(){
+  try{
+    const r=await window.storage.get(LK,true);
+    const logs=r?JSON.parse(r.value):[];
+    const el=document.getElementById('log-list');
+    if(!logs.length){ el.innerHTML='<div class="no-log">No activity yet.</div>'; return; }
+    el.innerHTML=logs.slice(-15).reverse().map(l=>{
+      const ac=l.action==='Booked'?'lc':'lr';
+      const meta=l.action==='Booked'&&l.duration?' · '+l.duration:'';
+      const mtg=l.meeting?'<span class="lm">'+l.meeting+'</span>':'';
+      const roomLabel='<span class="lroom">'+ROOMS[l.room].label+'</span>';
+      return '<div class="log-item">'+roomLabel+'<span class="ld">'+l.dept+'</span>'+mtg+'<span class="'+ac+'">'+l.action+meta+'</span><span class="lt">'+l.time+'</span></div>';
+    }).join('');
+  }catch{}
+}
+async function addLog(room,dept,action,duration,meeting){
+  try{
+    const r=await window.storage.get(LK,true);
+    const logs=r?JSON.parse(r.value):[];
+    logs.push({room,dept,action,duration:duration||null,meeting:meeting||null,time:now()});
+    if(logs.length>80) logs.splice(0,logs.length-80);
+    await window.storage.set(LK,JSON.stringify(logs),true);
+  }catch{}
+}
+
+// ── AUTO-EXPIRY TICKER (every 1s) ──
+setInterval(async()=>{
+  for(const room of ['gyaan','dharma']){
+    const s=state[room];
+    if(!s){ updateClaimTimer(room,null,null); continue; }
+    if(s.claimExpiry&&Date.now()>=s.claimExpiry){
+      const dept=s.dept, prev=s.meeting;
+      state[room]=null; updateTicker(); renderStatus(room); updateClaimTimer(room,null,null);
+      const rk=room==='gyaan'?RK_GYAAN:RK_DHARMA;
+      try{ await window.storage.delete(rk,true); await addLog(room,dept,'Auto-released (expired)',null,prev); }catch{}
+      loadLog(); continue;
+    }
+    if(s.claimExpiry){
+      const rem=s.claimExpiry-Date.now();
+      if(rem>0){
+        const infoEl=document.getElementById('info-'+room);
+        const mtg=s.meeting?' · '+s.meeting:'';
+        if(infoEl) infoEl.textContent='Booked by '+s.dept+mtg+' · Since '+s.since+' · '+s.duration+' · '+fmtRemaining(rem)+' left';
+        updateClaimTimer(room,rem,s.claimExpiry-s.claimTime);
+      }
+    } else {
+      updateClaimTimer(room,-1,null);
+    }
+  }
+},1000);
+
+// ── POLL STORAGE (every 3s) ──
+setInterval(loadState,3000);
+
+// ── BOOT ──
+loadState();
+</script>
+</body>
+</html>
